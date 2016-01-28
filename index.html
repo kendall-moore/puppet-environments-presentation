@@ -4,10 +4,10 @@
   <head>
     <meta charset="utf-8">
 
-    <title>Distributed OpenSCAP Compliance Validation with MCollective</title>
+    <title>Untangling Puppet Infrastructures</title>
 
-    <meta name="description" content="A presentation covering a custom MCollective Plugin written for scanning systems with OpenSCAP">
-    <meta name="author" content="Trevor Vaughan - Onyx Point, Inc.">
+    <meta name="description" content="A presentation on using r10k with hieradata and a control repo">
+    <meta name="author" content="Kendall Moore - Onyx Point">
 
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
@@ -35,7 +35,7 @@
     <![endif]-->
     <script>
       // Title for the header bar.
-      var header_title = "MCollective OpenSCAP Validation";
+      var header_title = "Untangling Puppet Infrastructures";
       var header_logo = "images/header_logo.svg";
     </script>
   </head>
@@ -262,10 +262,10 @@ snooper::config::master_pass:
 <script type="text/template">
 ## External Node Classifiers
 
-[Puppet Enterprise](https://docs.puppetlabs.com/pe/latest/console_classes_groups.html)
-[Puppet Dashboard](https://github.com/sodabrew/puppet-dashboard)
-[Foreman](https://docs.puppetlabs.com/pe/latest/console_classes_groups.html)
-[Create Your Own](https://docs.puppetlabs.com/guides/external_nodes.html)
+* [Puppet Enterprise](https://docs.puppetlabs.com/pe/latest/console_classes_groups.html)
+* [Puppet Dashboard](https://github.com/sodabrew/puppet-dashboard)
+* [Foreman](https://docs.puppetlabs.com/pe/latest/console_classes_groups.html)
+* [Create Your Own](https://docs.puppetlabs.com/guides/external_nodes.html)
 </script>
 </section>
 <section data-markdown>
@@ -296,6 +296,37 @@ snooper::config::master_pass:
 
   # Tell the master where the executable to connect is
   external_nodes = /usr/local/bin/puppet_node_classifier
+```
+</script>
+</section>
+<section data-markdown>
+<script type="text/template">
+## ENC Output
+
+* An ENC must return either a YAML hash or nothing
+* YAML hash may contain the following
+  * classes
+  * parameters
+  * environment keys
+* Example
+```
+---
+classes:
+    common:
+    puppet:
+    ntp:
+        ntpserver: 0.pool.ntp.org
+    aptsetup:
+        additional_apt_repos:
+            - deb localrepo.example.com/ubuntu lucid production
+            - deb localrepo.example.com/ubuntu lucid vendor
+parameters:
+    ntp_servers:
+        - 0.pool.ntp.org
+        - ntp.example.com
+    mail_server: mail.example.com
+    iburst: true
+environment: production
 ```
 </script>
 </section>
@@ -343,15 +374,6 @@ This presentation was made possible by:
 
   - [Reveal.js](https://github.com/hakimel/reveal.js) by [Hakim El Hattab](https://github.com/hakimel)
 
-</script>
-</section>
-<section data-markdown>
-<script type="text/template">
-## Thanks for Coming!
-
-![Thanks!](images/thanks_for_coming.png)
-
-## **Questions?**
 </script>
 </section>
       </div>

@@ -7,10 +7,10 @@ require 'find'
 require 'rake/clean'
 
 ### General Presentation Information ###
-TITLE = 'Distributed OpenSCAP Compliance Validation with MCollective'
-DESCRIPTION = 'A presentation covering a custom MCollective Plugin written for scanning systems with OpenSCAP'
-AUTHOR = 'Trevor Vaughan - Onyx Point, Inc.'
-GLOBAL_HEADER = 'MCollective OpenSCAP Validation'
+TITLE = 'Untangling Puppet Infrastructures'
+DESCRIPTION = 'A presentation on using r10k with hieradata and a control repo'
+AUTHOR = 'Kendall Moore - Onyx Point'
+GLOBAL_HEADER = 'Untangling Puppet Infrastructures'
 ### End General Presentation Information ###
 
 ### Slide Management ###
