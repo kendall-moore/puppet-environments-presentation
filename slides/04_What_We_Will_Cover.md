@@ -1,9 +1,8 @@
 ## What We Will Cover
 
-  - Intro to SCAP
-  - Intro to MCollective
-  - The SCAP Security Guide
-  - Development Process
-  - Plugin Capabilities
-  - The Future
+  - Puppet Environments
+  - Hieradata
+  - External Node Classifiers
+  - Control Repos
+  - r10k
   - Demo
