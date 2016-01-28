@@ -2,7 +2,7 @@
 
 ```
 # Store our admin password for our traffic snooping app
-# on node with fqdn marshaller.globalsercurities.org
+# on node with fqdn marshaller.globalsecurities.org
 #
 # Here, we may find this in /etc/puppet/environments/production/hieradata/enrypted/<fqdn>.eyaml
 ---

@@ -81,14 +81,14 @@ License: [Attribution-ShareAlike 3.0 Unported (CC BY-SA 3.0)](http://creativecom
 ## What We Will Cover
 
   - Puppet Environments
-  - Hieradata
   - External Node Classifiers
+  - Hieradata
   - Control Repos
   - r10k
+  - librarian-puppet
   - Demo
 </script>
 </section>
-<section>
 <section data-markdown>
 <script type="text/template">
 ## Introduction to Puppet Directory Environments
@@ -160,8 +160,78 @@ config_version  = 'scripts/config_version.sh $environmentpath $environment'
 * You are probably already using them, which means setting them up is easy
 </script>
 </section>
+<section data-markdown>
+<script type="text/template">
+## External Node Classifiers
+
+* [Puppet Enterprise](https://docs.puppetlabs.com/pe/latest/console_classes_groups.html)
+* [Puppet Dashboard](https://github.com/sodabrew/puppet-dashboard)
+* [Foreman](https://docs.puppetlabs.com/pe/latest/console_classes_groups.html)
+* [Create Your Own](https://docs.puppetlabs.com/guides/external_nodes.html)
+</script>
 </section>
-<section>
+<section data-markdown>
+<script type="text/template">
+## What is an External Node Classifier?
+
+* An arbitrary script or application which can tell Puppet which classes a node should have
+* An executable that can be called by puppet master
+* Reference any data source you want, including some of Puppet’s own data sources
+* Can be used in conjunction with other ENCs
+    * Classes declared in each will be merged
+* When compiling a catalog, all of the following is considered, in-order:
+    * Classes specified in the node object it received from the node terminus
+    * Classes or resources which are in the site manifest but outside any node definitions
+    * Classes or resources in the most specific node definition in site.pp that matches the current node
+</script>
+</section>
+<section data-markdown>
+<script type="text/template">
+## Connecting to an ENC
+
+* There are two variables that must be set in puppet.conf in order to connect to an ENC
+
+```
+[master]
+  # Tell the master that we are using an ENC
+  node_terminus = exec
+
+  # Tell the master where the executable to connect is
+  external_nodes = /usr/local/bin/puppet_node_classifier
+```
+</script>
+</section>
+<section data-markdown>
+<script type="text/template">
+## ENC Output
+
+* An ENC must return either a YAML hash or nothing
+* YAML hash may contain the following
+    * classes
+    * parameters
+    * environment keys
+* Example
+```
+---
+classes:
+    common:
+    puppet:
+    ntp:
+        ntpserver: 0.pool.ntp.org
+    aptsetup:
+        additional_apt_repos:
+            - deb localrepo.example.com/ubuntu lucid production
+            - deb localrepo.example.com/ubuntu lucid vendor
+parameters:
+    ntp_servers:
+        - 0.pool.ntp.org
+        - ntp.example.com
+    mail_server: mail.example.com
+    iburst: true
+environment: production
+```
+</script>
+</section>
 <section data-markdown>
 <script type="text/template">
 ## Managing Your Site Specific Data
@@ -256,80 +326,55 @@ snooper::config::master_pass:
 * Easier to publish your own modules for collaboration
 </script>
 </section>
-</section>
-<section>
 <section data-markdown>
 <script type="text/template">
-## External Node Classifiers
+## Control Repos
 
-* [Puppet Enterprise](https://docs.puppetlabs.com/pe/latest/console_classes_groups.html)
-* [Puppet Dashboard](https://github.com/sodabrew/puppet-dashboard)
-* [Foreman](https://docs.puppetlabs.com/pe/latest/console_classes_groups.html)
-* [Create Your Own](https://docs.puppetlabs.com/guides/external_nodes.html)
+* A place to store things specific to a Puppet environment
+* Typically modules are not stored here
+    * Roles and profiles are the exception to this rule
+* Hieradata usually contained in a control repo - but there are exceptions
 </script>
 </section>
 <section data-markdown>
 <script type="text/template">
-## What is an External Node Classifier?
+## Example Control Repo
 
-* An arbitrary script or application which can tell Puppet which classes a node should have
-* An executable that can be called by puppet master
-* Reference any data source you want, including some of Puppet’s own data sources
-* Can be used in conjunction with other ENCs
-  * Classes declared in each will be merged
-* When compiling a catalog, all of the following is considered, in-order:
-  * Classes specified in the node object it received from the node terminus
-  * Classes or resources which are in the site manifest but outside any node definitions
-  * Classes or resources in the most specific node definition in site.pp that matches the current node
-</script>
-</section>
-<section data-markdown>
-<script type="text/template">
-## Connecting to an ENC
-
-* There are two variables that must be set in puppet.conf in order to connect to an ENC
+* Taken from [puppetlabs/control-repo](https://github.com/puppetlabs/control-repo) on GitHub
 
 ```
-[master]
-  # Tell the master that we are using an ENC
-  node_terminus = exec
-
-  # Tell the master where the executable to connect is
-  external_nodes = /usr/local/bin/puppet_node_classifier
+[kendall@laptop control-repo]$ ll
+total 48
+-rw-rw-r--. 1 kendall kendall   131 Jan 28 15:41 environment.conf
+drwxrwxr-x. 4 kendall kendall  4096 Jan 28 15:41 hieradata
+-rw-rw-r--. 1 kendall kendall 11358 Jan 28 15:41 LICENSE
+drwxrwxr-x. 2 kendall kendall  4096 Jan 28 15:41 manifests
+-rw-rw-r--. 1 kendall kendall  1353 Jan 28 15:41 Puppetfile
+-rw-rw-r--. 1 kendall kendall  9660 Jan 28 15:41 README.md
+drwxrwxr-x. 2 kendall kendall  4096 Jan 28 15:41 scripts
+drwxrwxr-x. 7 kendall kendall  4096 Jan 28 15:41 site
 ```
 </script>
 </section>
 <section data-markdown>
 <script type="text/template">
-## ENC Output
+## Control Repo Structure
 
-* An ENC must return either a YAML hash or nothing
-* YAML hash may contain the following
-  * classes
-  * parameters
-  * environment keys
-* Example
-```
----
-classes:
-    common:
-    puppet:
-    ntp:
-        ntpserver: 0.pool.ntp.org
-    aptsetup:
-        additional_apt_repos:
-            - deb localrepo.example.com/ubuntu lucid production
-            - deb localrepo.example.com/ubuntu lucid vendor
-parameters:
-    ntp_servers:
-        - 0.pool.ntp.org
-        - ntp.example.com
-    mail_server: mail.example.com
-    iburst: true
-environment: production
-```
+* Most commonly used with Git
+    * Possible with SVN et al., as well
+* Remote branches should match the name of your environment
+* No longer edit your environments by hand!
 </script>
 </section>
+<section data-markdown>
+<script type="text/template">
+## What You Gain
+
+* Accountability for people making changes inside of your environments
+* Version history
+* Simpler collaboration with teammates
+* All of your tool suites that you use else where with source control
+</script>
 </section>
 <section data-markdown>
 <script type="text/template">
@@ -338,14 +383,6 @@ environment: production
 ![Are You Awake](images/Hugo_Sleeping.jpg)
 </script>
 </section>
-<section>
-<section data-markdown>
-<script type="text/template">
-## Control Repos
-</script>
-</section>
-</section>
-<section>
 <section data-markdown>
 <script type="text/template">
 ## Enter - Killer Robots!
@@ -353,6 +390,124 @@ environment: production
 [![r10k](images/r10k.png)](https://docs.puppetlabs.com/pe/latest/r10k.html)
 </script>
 </section>
+<section data-markdown>
+<script type="text/template">
+## What in the World is This Thing?
+
+* Code management tool that allows you to manage your environment configurations
+* Syncs your $environmentpath with a remote repository (using Git as a default)
+* Aids in your Puppet deployment process
+* Can optionally control your component modules as well
+    * All modules are specified in a Puppetfile
+    * By default, uses the Puppet Forge
+    * Can download and install modules from any repository
+* Contains an environment.conf for each environment
+</script>
+</section>
+<section data-markdown>
+<script type="text/template">
+## An Example Puppetfile
+
+```ruby
+Install zack/r10k and keep it up to date with 'master'
+mod 'zack/r10k', :latest
+
+# Install puppetlabs/apache and track the 'docs_experiment' branch
+mod 'puppetlabs/apache',
+  :git => 'https://github.com/puppetlabs/puppetlabs-apache',
+  :ref => 'docs_experiment'
+
+# Install puppetlabs/ntp and pin to the '2.0.0' tag
+mod 'puppetlabs/ntp',
+  :git => 'https://github.com/puppetlabs/puppetlabs-ntp',
+  :tag => '2.0.0'
+
+# Install puppetlabs/apache and pin to the '4d8cb3b' commit
+mod 'ghoneycutt/dnsclient',
+  :git    => 'https://github.com/ghoneycutt/puppet-module-dnsclient',
+  :commit = '4d8cb3b29e321eed6c446d4cd1948dfbd4e0a506'
+```
+</script>
+</section>
+<section data-markdown>
+<script type="text/template">
+## Where Do You Put Roles and Profiles?
+
+* In your control repo instead
+* Why?
+    * The thought is that roles and profiles are used to control your enviornment 
+</script>
+</section>
+<section data-markdown>
+<script type="text/template">
+## An Example Environment Configuration
+
+```ruby
+modulepath          = modules:site:$basemodulepath
+config_version      = "1.0.0"
+```
+</script>
+</section>
+<section data-markdown>
+<script type="text/template">
+## Executing r10k to Deploy Your Environments
+
+```
+# The r10k deploy subcommand
+
+NAME
+    deploy - Puppet dynamic environment deployment
+
+USAGE
+    r10k deploy <subcommand>
+
+DESCRIPTION
+    `r10k deploy` implements the Git branch to Puppet environment workflow
+    (https://puppetlabs.com/blog/git-workflow-and-puppet-environments/).
+
+SUBCOMMANDS
+    display         Display environments and modules in the deployment
+    environment     Deploy environments and their dependent modules
+    module          Deploy modules in all environments
+
+OPTIONS
+       --cachedir    Specify a cachedir, overriding the value in config
+
+OPTIONS FOR R10K
+    -c --config      Specify a global configuration file
+       --color       Enable colored log messages
+    -h --help        Show help for this command
+    -t --trace       Display stack traces on application crash
+    -v --verbose     Set log verbosity. Valid values: fatal, error, warn, notice, info, debug, debug1, debug2
+```
+</script>
+</section>
+<section data-markdown>
+<script type="text/template">
+## Some Examples of Deployment
+
+* Deploy to all of my environments
+```
+r10k deploy environment
+```
+
+* Deploy to only my production environment
+```
+r10k deploy environment production
+```
+
+* Deploy to all environments and download modules too
+```
+r10k deploy environment -p
+```
+</script>
+</section>
+<section data-markdown>
+<script type="text/template">
+## Alternatively - Librarian Puppet
+
+[![librarian-puppet](images/librarian_puppet.jpg)](https://github.com/rodjek/librarian-puppet)
+</script>
 </section>
 <section data-markdown>
 <script type="text/template">

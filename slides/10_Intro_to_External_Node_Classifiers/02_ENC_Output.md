@@ -2,9 +2,9 @@
 
 * An ENC must return either a YAML hash or nothing
 * YAML hash may contain the following
-  * classes
-  * parameters
-  * environment keys
+    * classes
+    * parameters
+    * environment keys
 * Example
 ```
 ---
