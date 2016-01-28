@@ -156,7 +156,7 @@ config_version  = 'scripts/config_version.sh $environmentpath $environment'
 
 * Easily manage separate modules and profiles all on the same Puppet Master
 * Vendor patches that remove all of your LDAP databases no longer happen in production at 3 in the morning (Thanks, RedHat)
-* Directory environments provide seemless integration with source control
+* Directory environments provide seamless integration with source control
 * You are probably already using them, which means setting them up is easy
 </script>
 </section>
@@ -211,6 +211,7 @@ config_version  = 'scripts/config_version.sh $environmentpath $environment'
     * parameters
     * environment keys
 * Example
+
 ```
 ---
 classes:
@@ -296,7 +297,7 @@ ntp::servers:
 
 ```
 # Store our admin password for our traffic snooping app
-# on node with fqdn marshaller.globalsercurities.org
+# on node with fqdn marshaller.globalsecurities.org
 #
 # Here, we may find this in /etc/puppet/environments/production/hieradata/enrypted/<fqdn>.eyaml
 ---
@@ -362,7 +363,7 @@ drwxrwxr-x. 7 kendall kendall  4096 Jan 28 15:41 site
 
 * Most commonly used with Git
     * Possible with SVN et al., as well
-* Remote branches should match the name of your environment
+* Remote branches must match the name of your environment
 * No longer edit your environments by hand!
 </script>
 </section>
@@ -425,7 +426,7 @@ mod 'puppetlabs/ntp',
 # Install puppetlabs/apache and pin to the '4d8cb3b' commit
 mod 'ghoneycutt/dnsclient',
   :git    => 'https://github.com/ghoneycutt/puppet-module-dnsclient',
-  :commit = '4d8cb3b29e321eed6c446d4cd1948dfbd4e0a506'
+  :commit => '4d8cb3b29e321eed6c446d4cd1948dfbd4e0a506'
 ```
 </script>
 </section>
@@ -511,9 +512,40 @@ r10k deploy environment -p
 </section>
 <section data-markdown>
 <script type="text/template">
+## Librarian Puppet
+
+* Very similar to r10k
+    * Born from the same philosophy of managing environments
+    * Uses a Puppetfile to describe modules
+* Allows for installation to specific paths
+</script>
+</section>
+<section data-markdown>
+<script type="text/template">
+## Available Commands
+
+```
+Commands:
+  librarian-puppet clean           # Cleans out the cache
+  librarian-puppet config          # Show or edit the config
+  librarian-puppet help [COMMAND]  # Describe commands
+  librarian-puppet init            # Initializes the directory
+  librarian-puppet install         # Install modules
+  librarian-puppet outdated        # Lists outdated dependencies
+  librarian-puppet package         # Cache to vendor/puppet/cache
+  librarian-puppet show            # Shows dependencies
+  librarian-puppet update          # Updates and install
+  librarian-puppet version         # Displays the version
+```
+</script>
+</section>
+<section data-markdown>
+<script type="text/template">
 ## In Conclusion
 
 * Got it? Good!
+
+[![r10k Workflow](images/r10k_workflow.png)](https://puppetlabs.com/webinars/git-workflow-best-practices-deploying-r10k)
 </script>
 </section>
 <section data-markdown>

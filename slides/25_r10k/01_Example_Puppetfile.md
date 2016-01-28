@@ -17,5 +17,5 @@ mod 'puppetlabs/ntp',
 # Install puppetlabs/apache and pin to the '4d8cb3b' commit
 mod 'ghoneycutt/dnsclient',
   :git    => 'https://github.com/ghoneycutt/puppet-module-dnsclient',
-  :commit = '4d8cb3b29e321eed6c446d4cd1948dfbd4e0a506'
+  :commit => '4d8cb3b29e321eed6c446d4cd1948dfbd4e0a506'
 ```
