@@ -18,4 +18,3 @@
   # Sets how often the Puppet will refresh information about environments. 
   environment_timeout = 0
 ```
-

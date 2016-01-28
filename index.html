@@ -1,0 +1,368 @@
+<!doctype html>
+<html lang="en">
+
+  <head>
+    <meta charset="utf-8">
+
+    <title>Distributed OpenSCAP Compliance Validation with MCollective</title>
+
+    <meta name="description" content="A presentation covering a custom MCollective Plugin written for scanning systems with OpenSCAP">
+    <meta name="author" content="Trevor Vaughan - Onyx Point, Inc.">
+
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+
+    <link rel="stylesheet" href="css/reveal.min.css">
+    <link rel="stylesheet" href="css/theme/night.css" id="theme">
+    <!-- Custom theme modifications -->
+    <link rel="stylesheet" href="css/theme/custom.css" id="custom_theme">
+
+    <!-- For syntax highlighting -->
+    <link rel="stylesheet" href="lib/css/zenburn.css">
+
+    <!-- If the query includes 'print-pdf', use the PDF print sheet -->
+    <script>
+      if ( window.location.search.match( /print-pdf/gi ) ) {
+        document.write( '<link rel="stylesheet" href="css/print/pdf.css" type="text/css">' );
+        document.write( '<link rel="stylesheet" href="css/print/pdf_custom.css" type="text/css">' );
+      }
+    </script>
+
+    <!--[if lt IE 9]>
+    <script src="lib/js/html5shiv.js"></script>
+    <![endif]-->
+    <script>
+      // Title for the header bar.
+      var header_title = "MCollective OpenSCAP Validation";
+      var header_logo = "images/header_logo.svg";
+    </script>
+  </head>
+
+  <body>
+
+    <div class="reveal">
+      <div class="topbar">
+        <h1 class="header_title">
+          <script>document.write(header_title)</script>
+        </h1>
+        <script>document.write('<image class="logo" src="' + header_logo + '"/>')</script>
+      </div>
+      <div class="slides">
+<section data-markdown>
+<script type="text/template">
+## Untangling Puppet Infrastructures
+
+Kendall Moore - [Onyx Point, Inc.](https://www.onyxpoint.com) <!-- .element: class="author" -->
+
+License: [Attribution-ShareAlike 3.0 Unported (CC BY-SA 3.0)](http://creativecommons.org/licenses/by-sa/3.0/)
+
+<!-- .element: class="caption" -->
+
+![CC BY-SA 3.0 Logo](images/CC-BY-SA.png)
+</script>
+</section>
+<section data-markdown>
+<script type="text/template">
+## About Me
+
+* Puppet Certified Professional
+* PuppetLabs Professional Services Engineer
+* Employee of [Onyx Point, Inc.](http://www.onyxpoint.com) (2015)
+  * Puppet Labs Services Partner
+  * Government Contracting
+  * Automation, Data Flow, and Cloud Infrastructure Consulting
+  * FOSS Supporters
+</script>
+</section>
+<section data-markdown>
+<script type="text/template">
+## What We Will Cover
+
+  - Puppet Environments
+  - Hieradata
+  - External Node Classifiers
+  - Control Repos
+  - r10k
+  - Demo
+</script>
+</section>
+<section>
+<section data-markdown>
+<script type="text/template">
+## Introduction to Puppet Directory Environments
+
+[![Directory Environments](images/environment_logo.jpg)](https://docs.puppetlabs.com/puppet/latest/reference/environments.html)
+</script>
+</section>
+<section data-markdown>
+<script type="text/template">
+## What are Puppet Directory Environments
+
+* Isolated Groups of Puppet Agent Nodes
+* For Example:
+    * Experimental
+        * I grabbed it from the internet, so it has to work!
+    * Validation
+        * Ok, so maybe I had to iron out some details, but now it works!
+    * Production
+        * My boss is going to fire me in 8 seconds if this push breaks production...
+</script>
+</section>
+<section data-markdown>
+<script type="text/template">
+## Configuring and Enabling Environments
+
+```ruby
+# Puppet.conf on the master node(s).
+[main]
+  # Lists directories of global modules that all environments can access by default.
+  basemodulepath = /etc/puppet/modules:/opt/puppet/share/puppet/modules
+
+  # Is the list of directories where Puppet will look for environments.
+  environmentpath = /etc/puppet/environments
+
+  # specifies the main manifest for any environment that doesn’t set a manifest value in environment.conf.
+  default_manifest = /etc/puppet/manifests/site.pp
+
+  # Lets you specify that all environments should use a shared main manifest. This requires default_manifest to be set to an absolute path.
+  disable_per_environment_manifest = false
+
+  # Sets how often the Puppet will refresh information about environments. 
+  environment_timeout = 0
+```
+</script>
+</section>
+<section data-markdown>
+<script type="text/template">
+## Configuring and Enabling Environments
+
+```ruby
+# Sample environment.conf for a Puppet directory environment
+
+# Module directories for this specific environment
+modulepath = modules:site:$basemodulepath
+
+# A helper script to specify the Git version of this environment (Spoiler alert!)
+config_version  = 'scripts/config_version.sh $environmentpath $environment'
+
+```
+</script>
+</section>
+<section data-markdown>
+<script type="text/template">
+## Why Environments are Important
+
+* Easily manage separate modules and profiles all on the same Puppet Master
+* Vendor patches that remove all of your LDAP databases no longer happen in production at 3 in the morning (Thanks, RedHat)
+* Directory environments provide seemless integration with source control
+* You are probably already using them, which means setting them up is easy
+</script>
+</section>
+</section>
+<section>
+<section data-markdown>
+<script type="text/template">
+## Managing Your Site Specific Data
+
+[Hieradata](https://docs.puppetlabs.com/hiera/latest/)
+</script>
+</section>
+<section data-markdown>
+<script type="text/template">
+## What is Hiera?
+
+* A key/value lookup tool for configuration data
+* Set node/site specific data in a non-repetitive way
+* Encrypt and store sensitive data such as passwords
+</script>
+</section>
+<section data-markdown>
+<script type="text/template">
+## Setting Up Hiera
+
+```
+# A basic setup for /etc/puppet/hiera.yaml
+---
+:backends:
+  - yaml
+  - eyaml
+:yaml:
+  :datadir: /etc/puppet/environments/%{environment}/hieradata
+:eyaml:
+  :datadir: /etc/puppet/environments/%{environment}/hieradata/encrypted
+  :pkcs7_private_key: /etc/puppet/keys//private_key.pkcs7.pem
+  :pkcs7_public_key:  /etc/puppet/keys/public_key.pkcs7.pem
+:hierarchy:
+  - "node/%{::fqdn}"
+  - "%{::osfamily}"
+  - common
+```
+</script>
+</section>
+<section data-markdown>
+<script type="text/template">
+## Example Hieradata Configuration File
+
+```
+# An example to setup NTP in common.yaml
+---
+ntp::restrict:
+  -
+ntp::autoupdate: false
+ntp::enable: true
+ntp::servers:
+  - 0.us.pool.ntp.org iburst
+  - 1.us.pool.ntp.org iburst
+  - 2.us.pool.ntp.org iburst
+  - 3.us.pool.ntp.org iburst
+```
+</script>
+</section>
+<section data-markdown>
+<script type="text/template">
+## And Again - But With Encryption
+
+```
+# Store our admin password for our traffic snooping app
+# on node with fqdn marshaller.globalsercurities.org
+#
+# Here, we may find this in /etc/puppet/environments/production/hieradata/enrypted/<fqdn>.eyaml
+---
+snooper::config::master_user: >
+  ENC[PKCS7,Y22exl+OvjDe+drmik2XEeD3VQtl1uZJXFFF2NnrMXDWx0csyqLB/2NOWefv
+  NBTZfOlPvMlAesyr4bUY4I5XeVbVk38XKxeriH69EFAD4CahIZlC8lkE/uDh
+  jJGQfh052eonkungHIcuGKY/5sEbbZl/qufjAtp/ufor15VBJtsXt17tXP4y
+  l5ZP119Fwq8xiREGOL0lVvFYJz2hZc1ppPCNG5lwuLnTekXN/OazNYpf4CMd
+  /HjZFXwcXRtTlzewJLc+/gox2IfByQRhsI/AgogRfYQKocZgFb/DOZoXR7wm
+  IZGeunzwhqfmEtGiqpvJJQ5wVRdzJVpTnANBA5qxeA==]
+snooper::config::master_pass:
+  ENC[PKCS7,Y22exl+OvjDe+drmik2XEeD3VQtl1uZJXFFF2NnrMXDWx0csyqLB/2NOWefv
+  KSLFHFKJLLhfasddjfhsadkfjhAJKDHkasjhfkljSADSFHklLHDklalsfhaA
+  lkjdaghfKJSDHjhdsgf/JKSHF/FD/SsfkhafdAJkoijewfkldjfoqwenfaWs
+  LKJFHkdjhgKHSDsdklgjhafgLKLSFHasgiohKFaewg902135JKABDfjkwaeg
+  KDJGHO98q3745hKFJEFiwege/wegq/f2e4qgjfaoi89237rHUGFJHWFf782g
+  LKJKJEHFwelqfkhilqweheflqwefiuqwyry8rJKAFG==]
+```
+</script>
+</section>
+<section data-markdown>
+<script type="text/template">
+## Why Should I use it?
+
+* Easier to configure your own nodes: default data with multiple levels of overrides is easy
+* Easier to re-use public Puppet modules
+* Easier to publish your own modules for collaboration
+</script>
+</section>
+</section>
+<section>
+<section data-markdown>
+<script type="text/template">
+## External Node Classifiers
+
+[Puppet Enterprise](https://docs.puppetlabs.com/pe/latest/console_classes_groups.html)
+[Puppet Dashboard](https://github.com/sodabrew/puppet-dashboard)
+[Foreman](https://docs.puppetlabs.com/pe/latest/console_classes_groups.html)
+[Create Your Own](https://docs.puppetlabs.com/guides/external_nodes.html)
+</script>
+</section>
+<section data-markdown>
+<script type="text/template">
+## What is an External Node Classifier?
+
+* An arbitrary script or application which can tell Puppet which classes a node should have
+* An executable that can be called by puppet master
+* Reference any data source you want, including some of Puppet’s own data sources
+* Can be used in conjunction with other ENCs
+  * Classes declared in each will be merged
+* When compiling a catalog, all of the following is considered, in-order:
+  * Classes specified in the node object it received from the node terminus
+  * Classes or resources which are in the site manifest but outside any node definitions
+  * Classes or resources in the most specific node definition in site.pp that matches the current node
+</script>
+</section>
+<section data-markdown>
+<script type="text/template">
+## Connecting to an ENC
+
+* There are two variables that must be set in puppet.conf in order to connect to an ENC
+
+```
+[master]
+  # Tell the master that we are using an ENC
+  node_terminus = exec
+
+  # Tell the master where the executable to connect is
+  external_nodes = /usr/local/bin/puppet_node_classifier
+```
+</script>
+</section>
+</section>
+<section data-markdown>
+<script type="text/template">
+## Are You Awake?!
+
+![Are You Awake](images/Hugo_Sleeping.jpg)
+</script>
+</section>
+<section>
+<section data-markdown>
+<script type="text/template">
+## Control Repos
+</script>
+</section>
+</section>
+<section>
+<section data-markdown>
+<script type="text/template">
+## Enter - Killer Robots!
+
+[![r10k](images/r10k.png)](https://docs.puppetlabs.com/pe/latest/r10k.html)
+</script>
+</section>
+</section>
+<section data-markdown>
+<script type="text/template">
+## In Conclusion
+
+* Got it? Good!
+</script>
+</section>
+<section data-markdown>
+<script type="text/template">
+# Demonstration
+</script>
+</section>
+<section data-markdown>
+<script type="text/template">
+### Presentation Information
+
+This presentation was made possible by:
+
+  - [Reveal.js](https://github.com/hakimel/reveal.js) by [Hakim El Hattab](https://github.com/hakimel)
+
+</script>
+</section>
+<section data-markdown>
+<script type="text/template">
+## Thanks for Coming!
+
+![Thanks!](images/thanks_for_coming.png)
+
+## **Questions?**
+</script>
+</section>
+      </div>
+    </div>
+
+    <script src="lib/js/head.min.js"></script>
+    <script src="js/reveal.min.js"></script>
+
+    <!-- Include JQuery -->
+    <script src="js/jquery-1.11.0.min.js"></script>
+    <!-- Configuration Options -->
+    <script src="js/configuration.js"></script>
+  </body>
+</html>
